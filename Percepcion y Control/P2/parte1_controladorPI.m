@@ -17,7 +17,10 @@ error_acumulado = [0, 0];
 
 % Ganancias del controlador P
 Kp_dist = 0.5;
-Kp_ang = 1;
+Kp_ang = 1.0;
+Ki_ang = 0.5;     % NUEVO: ganancia integral (ajustable)
+
+Eori_integral = 0;  % NUEVO: acumulador de error integral
 
 %% DECLARACIÓN DE SUBSCRIBERS
 odom = rossubscriber('/robot0/odom'); % Subscripción a la odometría
@@ -63,18 +66,24 @@ for i_dest = 1:num_destinos
         ang_deseado = atan2(dy, dx);
         Eori = atan2(sin(ang_deseado - yaw), cos(ang_deseado - yaw)); % Normalizado
 
+        % NUEVO: Acumulamos el error de orientación para la parte integral
+        Eori_integral = Eori_integral + Eori * (1/10);  % asumimos tasa de 10 Hz
+
         % Calculamos las consignas de velocidades
         consigna_vel_linear = Kp_dist * Edist;
-        consigna_vel_ang = Kp_ang * Eori;
+        consigna_vel_ang = Kp_ang * Eori + Ki_ang * Eori_integral;  % NUEVO: cambio de linea
 
         % Saturación
         consigna_vel_linear = min(consigna_vel_linear, 1.0);
         consigna_vel_ang = min(max(consigna_vel_ang, -0.5), 0.5);
 
+        Eori_integral = max(min(Eori_integral, 1), -1);  % NUEVO: linea añadida
+
         % Condicion de parada
         if (Edist < umbral_distancia) && (abs(Eori) < umbral_angulo)
             break;
         end
+
 
         % Aplicamos consignas de control
         msg_vel.Linear.X = consigna_vel_linear;
