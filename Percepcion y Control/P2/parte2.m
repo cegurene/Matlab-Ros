@@ -10,8 +10,8 @@ MAX_TIME = 1000;  % Numero máximo de iteraciones
 medidas = zeros(5,1000);
 
 D = 3;          % NUEVO: Distancia deseada a la pared (metros)
-K_ori = 0.5;      % NUEVO: Ganancia para error de orientación
-K_dist = 0.5;     % NUEVO: Ganancia para error lateral
+K_ori = 0.8;      % NUEVO: Ganancia para error de orientación
+K_dist = 0.6;     % NUEVO: Ganancia para error lateral
 
 %% DECLARACIÓN DE SUBSCRIBERS
 odom = rossubscriber('/robot0/odom'); % Subscripcion a la odometria
@@ -44,75 +44,84 @@ lastdistav = 0;
 
 %% Bucle de control
 while (i < 1001)
-    %i = i + 1;
-
-    %% Obtenemos la posición y medidas de sonar
-    pos=odom.LatestMessage.Pose.Pose.Position;
+    
+    % Obtener posición y sonar
+    pos = odom.LatestMessage.Pose.Pose.Position;
     msg_sonar0 = receive(sonar0);
-
-    %% Calculamos la distancia avanzada y medimos la distancia a la pared
-    dx = pos.X - lastpos.X;  % NUEVO
-    dy = pos.Y - lastpos.Y;  % NUEVO
-    distav = sqrt(dx^2 + dy^2); % NUEVO: avance lineal
-
-    dist = double(msg_sonar0.Range_) + 0.125;
-    if (dist > 5)
+    dist = double(msg_sonar0.Range_) - 0.105;
+    
+    % Limitar la medida
+    if dist > 5
         dist = 5;
     end
-
-    %% Calculamos el error de distancia y orientación
-    if distav > 0.001  % NUEVO: evitar división por cero
+    
+    % Distancia avanzada desde la última iteración
+    dx = pos.X - lastpos.X;
+    dy = pos.Y - lastpos.Y;
+    distav = sqrt(dx^2 + dy^2);
+    
+    % Calcular errores SOLO si hay avance
+    if distav > 0.001 && i > 1
         Eori = atan((dist - lastdist) / distav);
     else
         Eori = 0;
     end
-
+    
     Edist = dist - D;
-    medidas(1,i) = dist;
-    medidas(2,i) = lastdist;  % valor anterior de distancia
-    medidas(3,i) = distav;
-    medidas(4,i) = Eori;
-    medidas(5,i) = Edist;
-
-    %% Calculamos las consignas de velocidades
-    consigna_vel_linear = 0.3;
+    
+    % Control angular
     consigna_vel_ang = K_ori * Eori + K_dist * Edist;
-    consigna_vel_ang = max(-0.5, min(consigna_vel_ang, 0.5));
-
-    %% Condición de parada
-    if i > 75
+    
+    % Saturación
+    max_w = 0.5;
+    %consigna_vel_ang = max(-max_w, min(consigna_vel_ang, max_w));
+    
+    % Velocidad lineal constante
+    consigna_vel_linear = 0.3;
+    
+    % Condición de parada (opcional o dejar fuera si el robot debe seguir indefinidamente)
+    if i > 20
         if (abs(Edist) < 0.01) && (abs(Eori) < 0.01)
-            fprintf('Parada\n');
             break
         end
     end
 
-    %% Aplicamos consignas de control
+    fprintf('i = %d | dist = %.3f | lastdist = %.3f | distav = %.4f\n', i, dist, lastdist, distav);
+    fprintf('Eori = %.4f | Edist = %.4f | w = %.4f\n', Eori, Edist, consigna_vel_ang);
+    fprintf('\n');
+    
+    % Aplicar velocidades al robot
     msg_vel.Linear.X = consigna_vel_linear;
-    msg_vel.Linear.Y = 0;
-    msg_vel.Linear.Z = 0;
-    msg_vel.Angular.X = 0;
-    msg_vel.Angular.Y = 0;
     msg_vel.Angular.Z = consigna_vel_ang;
-
-    % Comando de velocidad
-    send(pub,msg_vel);
-
+    send(pub, msg_vel);
+    
+    % Guardar variables para la siguiente iteración
     lastpos = pos;
     lastdist = dist;
-    lastvAng = msg_vel.Angular.Z;
     lastdistav = distav;
+    
+    % Guardar datos
+    medidas(1,i) = dist;
+    medidas(2,i) = lastdist;
+    medidas(3,i) = distav;
+    medidas(4,i) = Eori;
+    medidas(5,i) = Edist;
 
-    % Temporización del bucle según el parámetro establecido en r
+    i = i+1;
     waitfor(r);
-
-    % if (i == MAX_TIME)
-    %     break
-    % end
-    i = i + 1;
 end
 
 save('medidas.mat', 'medidas');
+
+msg_vel.Linear.X = 0;
+msg_vel.Linear.Y = 0;
+msg_vel.Linear.Z = 0;
+msg_vel.Angular.X = 0;
+msg_vel.Angular.Y = 0;
+msg_vel.Angular.Z = 0;
+
+% Comando de velocidad
+send(pub,msg_vel);
 
 %% DESCONEXIÓN DE ROS
 rosshutdown;
