@@ -1,25 +1,32 @@
-%% INICIALIZACIÓN DE ROS (COMPLETAR ESPACIOS CON LAS DIRECCIONES IP)
 close all;
 clear all;
-setenv('ROS_MASTER_URI','http://192.168.1.138:11311'); %IP del simulador
-setenv('ROS_ IP','192.168.1.49'); %Mi IP
+rosshutdown;
+setenv('ROS_MASTER_URI','http://172.29.30.179:11311') %IP del robot
+setenv('ROS_IP','172.29.29.61') %Mi IP
 rosinit % Inicialización de ROS en la IP correspondiente
 
 %% DECLARACIÓN DE VARIABLES NECESARIAS PARA EL CONTROL
 MAX_TIME = 1000;  % Numero máximo de iteraciones
 medidas = zeros(5,1000);
 
-D = 3;          % NUEVO: Distancia deseada a la pared (metros)
-K_ori = 2;      % NUEVO: Ganancia para error de orientación 0.8
-K_dist = 3;     % NUEVO: Ganancia para error lateral 0.6
+D = 1;          % NUEVO: Distancia deseada a la pared (metros)
+K_ori = 0.8;      % NUEVO: Ganancia para error de orientación 0.8
+K_dist = 0.6;     % NUEVO: Ganancia para error lateral 0.6
 
 %% DECLARACIÓN DE SUBSCRIBERS
-odom = rossubscriber('/robot0/odom'); % Subscripcion a la odometria
-sonar0 = rossubscriber('/robot0/sonar_0', rostype.sensor_msgs_Range);
+odom=rossubscriber('/pose'); % Subscripción a la odometría
+sonar0 = rossubscriber('/sonar_0', rostype.sensor_msgs_Range);
 
 %% DECLARACIÓN DE PUBLISHERS
-pub = rospublisher('/robot0/cmd_vel', 'geometry_msgs/Twist'); %
-msg_vel=rosmessage(pub);  % Creamos un mensaje del tipo declarado en "pub" (geometry_msgs/Twist)
+pub = rospublisher('/cmd_vel', 'geometry_msgs/Twist');
+pub_enable = rospublisher('/cmd_motor_state', 'std_msgs/Int32')
+msg_enable_motor = rosmessage(pub_enable);
+
+msg_enable_motor.Data=1;
+send(pub_enable, msg_enable_motor);
+
+msg_vel = rosmessage(pub);
+
 msg_sonar0 = rosmessage(sonar0);
 
 %% Definimos la periodicidad del bucle (10hz)
@@ -27,10 +34,10 @@ r = robotics.Rate(10);
 waitfor(r);
 
 %% Esperamos entre 2 y 5 segundos antes de leer el primer mensaje para aseguramos que empiezan a llegar mensajes.
-pause(3);
+pause(5);
 
 %% Nos aseguramos recibir un mensaje relacionado con el robot
-while (strcmp(odom.LatestMessage.ChildFrameId,'robot0')~=1)
+while (strcmp(odom.LatestMessage.ChildFrameId,'base_link')~=1)
     odom.LatestMessage
 end
 

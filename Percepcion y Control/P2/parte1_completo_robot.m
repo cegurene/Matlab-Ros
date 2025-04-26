@@ -1,16 +1,16 @@
-%% INICIALIZACIÓN DE ROS
-close all;
 clear all;
-setenv('ROS_MASTER_URI','http://192.168.1.138:11311'); %IP del simulador
-setenv('ROS_ IP','192.168.1.49'); %Mi IP
-rosinit % Inicialización de ROS en la IP correspondiente
+close all;
+rosshutdown;
+setenv('ROS_MASTER_URI','http://172.29.30.179:11311') %IP del robot
+setenv('ROS_IP','172.29.29.61') %Mi IP
+rosinit % Inicialización de ROS
 
 %% DECLARACIÓN DE VARIABLES NECESARIAS PARA EL CONTROL
 % Punto objetivo (puedes cambiar esto por una entrada del usuario)
-destinos = [ 15, 5;
-              5, 15;
-             10, 10;
-             15, 15]; 
+destinos = [ 0, 2;
+              2, 0;
+             1.5, 0.5;
+             0, 0]; 
 
 num_destinos = size(destinos, 1);
 error_acumulado = [0, 0];
@@ -20,21 +20,26 @@ Kp_dist = 0.5;
 Kp_ang = 1;
 
 %% DECLARACIÓN DE SUBSCRIBERS
-odom = rossubscriber('/robot0/odom'); % Subscripción a la odometría
+odom=rossubscriber('/pose'); % Subscripción a la odometría
 
 %% DECLARACIÓN DE PUBLISHERS
-pub = rospublisher('/robot0/cmd_vel', 'geometry_msgs/Twist'); %
-msg_vel=rosmessage(pub); % Creamos un mensaje del tipo declarado en "pub" (geometry_msgs/Twist)
+pub = rospublisher('/cmd_vel', 'geometry_msgs/Twist');
+pub_enable = rospublisher('/cmd_motor_state', 'std_msgs/Int32');
+msg_enable_motor = rosmessage(pub_enable);
+
+msg_enable_motor.Data=1;
+send(pub_enable, msg_enable_motor);
+
+msg_vel = rosmessage(pub);
 
 %% Definimos la perodicidad del bucle (10 hz)
 r = robotics.Rate(10);
 waitfor(r);
 
-%% Esperamos entre 2 y 5 segundos antes de leer el primer mensaje para aseguramos que empiezan a llegar mensajes.
-pause(3);
+pause(5);
 
 %% Nos aseguramos recibir un mensaje relacionado con el robot
-while (strcmp(odom.LatestMessage.ChildFrameId,'robot0')~=1)
+while (strcmp(odom.LatestMessage.ChildFrameId,'base_link')~=1)
     odom.LatestMessage
 end
 

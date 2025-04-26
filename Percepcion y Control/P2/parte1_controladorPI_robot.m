@@ -1,40 +1,50 @@
 %% INICIALIZACIÓN DE ROS
 close all;
 clear all;
-setenv('ROS_MASTER_URI','http://192.168.1.138:11311'); %IP del simulador
+rosshutdown;
+setenv('ROS_MASTER_URI','http://172.29.30.179:11311') %IP del robot
 setenv('ROS_ IP','192.168.1.49'); %Mi IP
 rosinit % Inicialización de ROS en la IP correspondiente
 
 %% DECLARACIÓN DE VARIABLES NECESARIAS PARA EL CONTROL
 % Punto objetivo (puedes cambiar esto por una entrada del usuario)
-destinos = [ 15, 5;
-              5, 15;
-             10, 10;
-             15, 15]; 
+destinos = [ 0, 2;
+              2, 0;
+             1.5, 0.5;
+             0, 0]; 
 
 num_destinos = size(destinos, 1);
 error_acumulado = [0, 0];
 
-% Ganancias del controlador P
+% Ganancias del controlador PI
 Kp_dist = 0.5;
-Kp_ang = 1;
+Kp_ang = 1.0;
+Ki_ang = 1.5;     % NUEVO: ganancia integral (ajustable)
+
+Eori_integral = 0;  % NUEVO: acumulador de error integral
 
 %% DECLARACIÓN DE SUBSCRIBERS
-odom = rossubscriber('/robot0/odom'); % Subscripción a la odometría
+odom=rossubscriber('/pose'); % Subscripción a la odometría
 
 %% DECLARACIÓN DE PUBLISHERS
-pub = rospublisher('/robot0/cmd_vel', 'geometry_msgs/Twist'); %
-msg_vel=rosmessage(pub); % Creamos un mensaje del tipo declarado en "pub" (geometry_msgs/Twist)
+pub = rospublisher('/cmd_vel', 'geometry_msgs/Twist');
+pub_enable = rospublisher('/cmd_motor_state', 'std_msgs/Int32')
+msg_enable_motor = rosmessage(pub_enable);
+
+msg_enable_motor.Data=1;
+send(pub_enable, msg_enable_motor);
+
+msg_vel = rosmessage(pub);
 
 %% Definimos la perodicidad del bucle (10 hz)
 r = robotics.Rate(10);
 waitfor(r);
 
 %% Esperamos entre 2 y 5 segundos antes de leer el primer mensaje para aseguramos que empiezan a llegar mensajes.
-pause(3);
+pause(5);
 
 %% Nos aseguramos recibir un mensaje relacionado con el robot
-while (strcmp(odom.LatestMessage.ChildFrameId,'robot0')~=1)
+while (strcmp(odom.LatestMessage.ChildFrameId,'base_link')~=1)
     odom.LatestMessage
 end
 
@@ -68,13 +78,18 @@ for i_dest = 1:num_destinos
         ang_deseado = atan2(dy, dx);
         Eori = atan2(sin(ang_deseado - yaw), cos(ang_deseado - yaw)); % Normalizado
 
+        % NUEVO: Acumulamos el error de orientación para la parte integral
+        Eori_integral = Eori_integral + Eori * (1/10);  % asumimos tasa de 10 Hz
+
         % Calculamos las consignas de velocidades
         consigna_vel_linear = Kp_dist * Edist;
-        consigna_vel_ang = Kp_ang * Eori;
+        consigna_vel_ang = Kp_ang * Eori + Ki_ang * Eori_integral;  % NUEVO: cambio de linea
 
         % Saturación
         consigna_vel_linear = min(consigna_vel_linear, 1.0);
         consigna_vel_ang = min(max(consigna_vel_ang, -0.5), 0.5);
+
+        Eori_integral = max(min(Eori_integral, 1), -1);  % NUEVO: linea añadida
 
         % Guardamos la posicion para mostrar la trayectoria
         trayectoria_x(i) = pos.X;
@@ -85,6 +100,7 @@ for i_dest = 1:num_destinos
             break;
         end
 
+
         % Aplicamos consignas de control
         msg_vel.Linear.X = consigna_vel_linear;
         msg_vel.Linear.Y = 0;
@@ -94,7 +110,7 @@ for i_dest = 1:num_destinos
         msg_vel.Angular.Z = consigna_vel_ang;
         send(pub, msg_vel);
 
-        i = i+1;
+        i = i + 1;
         waitfor(r);
     end
 

@@ -1,7 +1,7 @@
 %% INICIALIZACIÓN DE ROS
 close all;
 clear all;
-setenv('ROS_MASTER_URI','http://192.168.1.125:11311'); %IP del simulador
+setenv('ROS_MASTER_URI','http://192.168.1.138:11311'); %IP del simulador
 setenv('ROS_ IP','192.168.1.49'); %Mi IP
 rosinit % Inicialización de ROS en la IP correspondiente
 
@@ -45,6 +45,11 @@ end
 umbral_distancia = 0.01;       % Umbral para detenerse (metros)
 umbral_angulo = deg2rad(5);   % Umbral angular para detenerse (radianes)
 
+trayectoria_x = zeros(1, 1000);
+trayectoria_y = zeros(1, 1000);
+
+i = 1;
+
 %% Bucle de control
 for i_dest = 1:num_destinos
     x_destino = destinos(i_dest, 1);
@@ -79,6 +84,10 @@ for i_dest = 1:num_destinos
 
         Eori_integral = max(min(Eori_integral, 1), -1);  % NUEVO: linea añadida
 
+        % Guardamos la posicion para mostrar la trayectoria
+        trayectoria_x(i) = pos.X;
+        trayectoria_y(i) = pos.Y;
+
         % Condicion de parada
         if (Edist < umbral_distancia) && (abs(Eori) < umbral_angulo)
             break;
@@ -94,6 +103,7 @@ for i_dest = 1:num_destinos
         msg_vel.Angular.Z = consigna_vel_ang;
         send(pub, msg_vel);
 
+        i = i + 1;
         waitfor(r);
     end
 
@@ -115,4 +125,8 @@ end
 %% FINALIZACIÓN
 fprintf('\nTodos los destinos han sido alcanzados.\n');
 fprintf('\nEl error acumulado es: %.2f metros\n', sqrt(error_acumulado(1,1)^2 + error_acumulado(1,2)^2));
+
+trayectoria_x = trayectoria_x(1:i);
+trayectoria_y = trayectoria_y(1:i);
+
 rosshutdown;

@@ -1,0 +1,25 @@
+% Cargar y preparar el mapa (si lo usas)
+img = imread('practica2.png');      % Puedes cambiar a otro si el entorno es libre
+img = flipud(img);             % Volteo vertical
+
+% Mostrar imagen con escala espacial real
+figure;
+imagesc([0 3], [0 3]);  % Entorno de 20x20 metros
+set(gca, 'YDir', 'normal');    % Para que Y = 0 esté abajo
+axis equal;
+hold on;
+
+% Dibujar la trayectoria
+plot(trayectoria_x, trayectoria_y, 'b-', 'LineWidth', 2);
+plot(trayectoria_x(1), trayectoria_y(1), 'go', 'MarkerSize', 10); % Inicio
+plot(trayectoria_x(end), trayectoria_y(end), 'rx', 'MarkerSize', 10); % Fin
+
+% Mostrar destinos
+plot(destinos(:,1), destinos(:,2), 'ko', 'MarkerSize', 8, 'MarkerFaceColor', 'y');
+text(destinos(:,1)+0.2, destinos(:,2), compose('(%g,%g)', destinos(:,1), destinos(:,2)), 'Color', 'k', 'FontSize', 8);
+
+% Etiquetas
+xlabel('X [m]');
+ylabel('Y [m]');
+title('Trayectoria del robot');
+grid on;
