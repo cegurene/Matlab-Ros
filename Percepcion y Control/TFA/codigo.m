@@ -42,9 +42,11 @@ trayectoria_y = zeros(1, 300);
 i = 1;
 
 %% Variables de movimiento
-D = 0.5;
+D = 0.4;
 K_ori = 2.0;
-K_dist = 0.2;
+K_dist = 1;
+vel_lineal = 0;
+vel_angular = 0;
 
 %% INICIALIZACIÓN DEL TEMPORIZADOR
 last_dist_der = NaN; % Variable para almacenar la última distancia del sonar derecho
@@ -95,11 +97,12 @@ while true
     dy = pos.Y - y_robot;
     dist_av = sqrt(dx^2 + dy^2);
 
-    % Movimiento
+    % Seguimiento de pared derecha
     if isnan(last_dist_der)
         last_dist_der = dist_der;
     end
 
+    % Calculo de errores
     if dist_av > 0.001
         Eori = atan((dist_der - last_dist_der) / dist_av);
     else
@@ -108,18 +111,21 @@ while true
 
     Edist = dist_der - D;
 
-    if dist_front_izq<0.5 || dist_front_der<0.5  % Obstaculo delante
-        vel_lineal = 0;
+    % Movimiento
+
+    if dist_izq < 0.6  % Obstaculo izquierda
         vel_angular = 0.3;
     else
-        if dist_izq < 0.5  % Obstaculo izquierda
-            vel_angular = 0.1;
+        if dist_front_izq<0.5 || dist_front_der<0.5  % Obstaculo delante
+            vel_lineal = 0;
+            vel_angular = 0.4;
         else
             % Obstaculo derecha
             vel_angular = -(K_ori * Eori + K_dist * Edist);
-            vel_lineal = 0.3;
+            vel_lineal = 0.5;
         end
     end
+    
 
     last_dist_der = dist_der;
 
