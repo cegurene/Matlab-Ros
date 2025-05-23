@@ -2,7 +2,7 @@
 close all;
 clear all;
 rosshutdown; % Cierra cualquier conexión previa de ROS
-setenv('ROS_MASTER_URI','http://192.168.1.138:11311'); % IP del simulador STDR
+setenv('ROS_MASTER_URI','http://192.168.1.146:11311'); % IP del simulador STDR
 setenv('ROS_ IP','192.168.1.49'); % IP local de tu máquina
 rosinit % Inicia la conexión con el nodo maestro de ROS
 
@@ -42,9 +42,9 @@ trayectoria_y = zeros(1, 300);
 i = 1;
 
 %% Variables de movimiento
-D = 0.4;
+D = 0.5;
 K_ori = 2.0;
-K_dist = 1;
+K_dist = 0.9;
 vel_lineal = 0;
 vel_angular = 0;
 
@@ -113,10 +113,10 @@ while true
 
     % Movimiento
 
-    if dist_izq < 0.6  % Obstaculo izquierda
-        vel_angular = 0.3;
+    if dist_izq < 0.25  % Obstaculo izquierda
+        vel_angular = -0.3;
     else
-        if dist_front_izq<0.5 || dist_front_der<0.5  % Obstaculo delante
+        if dist_front_izq<0.55 || dist_front_der<0.55  % Obstaculo delante
             vel_lineal = 0;
             vel_angular = 0.4;
         else
