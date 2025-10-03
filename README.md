@@ -28,8 +28,7 @@ Aquí encontrarás ejemplos y módulos para trabajar con percepción y control d
 
 ## 📂 Estructura del repositorio
 
-* `Percepcion_Control/` → Ejemplos relacionados con percepción y control.
-                        → Lectura de sensores y navegación usando controladores.
-* `Sistemas_Control/` → Implementaciones de sistemas de control clásicos y avanzados en MATLAB.
+* `Percepcion_Control/` → Ejemplos relacionados con percepción y control. Lectura de sensores, mapeado y navegación usando controladores.
+* `Sistemas_Control/` → Implementaciones de sistemas de control clásicos y avanzados en MATLAB. Lectura de sensores, mapeado y navegación autónoma.
 
 ---
