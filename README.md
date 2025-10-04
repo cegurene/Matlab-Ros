@@ -3,9 +3,9 @@
 [![Made with MATLAB](https://img.shields.io/badge/Made%20with-MATLAB-orange?logo=matlab)](https://www.mathworks.com/products/matlab.html)
 [![ROS](https://img.shields.io/badge/ROS-Robot%20Operating%20System-blue?logo=ros)](https://www.ros.org/)
 
+
 **Matlab-Ros** es un repositorio orientado a la integración entre **MATLAB** y **ROS (Robot Operating System)**.
 Aquí encontrarás ejemplos y módulos para trabajar con percepción y control de robots, utilizando la potencia de MATLAB dentro de un entorno distribuido ROS.
-Se usa también ROS2.
 
 ---
 
@@ -39,3 +39,11 @@ Se usa también ROS2.
 	 * Localización usando AMCL. Localizar un robot utilizando datos del láser y la odometría sobre un mapa conocido a priori.
 	 * Planificación local. Evitación de obstáculos usando VFH.
 	 * Planificación global. Navegación de origen a destino con PurePursuit y generar trayectoria con PRM.
+
+![Robot Localizado + Ruta calculada](https://github.com/cegurene/Matlab-Ros/blob/main/Sistemas%20de%20Control%20para%20Robots/Robot%20Localizado.png)
+
+![Ruta simulador](https://github.com/cegurene/Matlab-Ros/blob/main/Sistemas%20de%20Control%20para%20Robots/Ruta.png)
+
+![Ruta robot real](https://github.com/cegurene/Matlab-Ros/blob/main/Sistemas%20de%20Control%20para%20Robots/Ruta%20Robot%20Real.png)
+
+---
